@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, user-scalable=no, initial-scale=1.0">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<title>Knucklebound</title>
+<style>
+html, body, #canvas {
+margin: 0;
+padding: 0;
+border: 0;
+}
+
+body {
+color: white;
+background-color: black;
+overflow: hidden;
+touch-action: none;
+}
+
+#canvas {
+display: block;
+}
+
+#canvas:focus {
+outline: none;
+}
+
+#status, #status-splash, #status-progress {
+position: absolute;
+left: 0;
+right: 0;
+}
+
+#status, #status-splash {
+top: 0;
+bottom: 0;
+}
+
+#status {
+background-color: #242424;
+display: flex;
+flex-direction: column;
+justify-content: center;
+align-items: center;
+visibility: hidden;
+}
+
+#status-splash {
+max-height: 100%;
+max-width: 100%;
+margin: auto;
+}
+
+#status-splash.show-image--false {
+display: none;
+}
+
+#status-splash.fullsize--true {
+height: 100%;
+width: 100%;
+object-fit: contain;
+}
+
+#status-splash.use-filter--false {
+image-rendering: pixelated;
+}
+
+#status-progress, #status-notice {
+display: none;
+}
+
+#status-progress {
+bottom: 10%;
+width: 50%;
+margin: 0 auto;
+}
+
+#status-notice {
+background-color: #5b3943;
+border-radius: 0.5rem;
+border: 1px solid #9b3943;
+color: #e0e0e0;
+font-family: 'Noto Sans', 'Droid Sans', Arial, sans-serif;
+line-height: 1.3;
+margin: 0 2rem;
+overflow: hidden;
+padding: 1rem;
+text-align: center;
+z-index: 1;
+}
+
+#kb-video {
+position: fixed;
+right: 8px;
+bottom: 8px;
+width: 160px;
+height: 120px;
+object-fit: cover;
+border-radius: 8px;
+opacity: 0.55;
+z-index: 6;
+pointer-events: none;
+transform: scaleX(-1);
+}
+
+#kb-video.kb-hide { display: none; }
+</style>
+<link id="-gd-engine-icon" rel="icon" type="image/png" href="index.icon.png" />
+<link rel="apple-touch-icon" href="index.apple-touch-icon.png"/>
+<link rel="manifest" href="index.manifest.json">
+<script>(function(){function u(){try{var c=window.GodotAudio&&GodotAudio.ctx;if(c&&c.resume)c.resume();if(c){var b=c.createBuffer(1,1,c.sampleRate||44100);var s=c.createBufferSource();s.buffer=b;s.connect(c.destination);s.start(0);}}catch(e){}}['pointerdown','touchstart','keydown','click'].forEach(function(e){window.addEventListener(e,u,true);});})();</script>
+</head>
+<body>
+<canvas id="canvas">
+Your browser does not support the canvas tag.
+</canvas>
+
+<noscript>
+Your browser does not support JavaScript.
+</noscript>
+
+<div id="status">
+<img id="status-splash" class="show-image--true fullsize--true use-filter--true" src="index.png" alt="">
+<progress id="status-progress"></progress>
+<div id="status-notice"></div>
+</div>
+<video id="kb-video" class="kb-hide" playsinline autoplay muted></video>
+
+<script src="index.js"></script>
+<script>
+const GODOT_CONFIG = {"args":[],"canvasResizePolicy":2,"emscriptenPoolSize":8,"ensureCrossOriginIsolationHeaders":false,"executable":"index","experimentalVK":false,"fileSizes":{"index.pck":4061156,"index.wasm":39514754},"focusCanvas":true,"gdextensionLibs":[],"godotPoolSize":4,"serviceWorker":"index.service.worker.js"};
+const GODOT_THREADS_ENABLED = false;
+const engine = new Engine(GODOT_CONFIG);
+
+window.kbState = {
+	camera: false,
+	error: "",
+	from_orient: false,
+	yaw: 0,
+	pitch: -0.12,
+	left: {x: -0.28, y: 0.22, z: -0.42, grip: 0, seen: false},
+	right: {x: 0.28, y: 0.22, z: -0.42, grip: 0, seen: false}
+};
+
+(function () {
+	let yaw0 = 0;
+	let pitch0 = 0;
+	let got0 = false;
+	let landmarker = null;
+	let running = false;
+	let lastVideoTime = -1;
+	const video = document.getElementById("kb-video");
+
+	function restHand(side) {
+		return side === "left"
+			? {x: -0.28, y: 0.22, z: -0.42, grip: 0, seen: false}
+			: {x: 0.28, y: 0.22, z: -0.42, grip: 0, seen: false};
+	}
+
+	function palmSize(lm) {
+		const a = lm[0];
+		const b = lm[9];
+		const dx = a.x - b.x;
+		const dy = a.y - b.y;
+		return Math.sqrt(dx * dx + dy * dy);
+	}
+
+	function gripOf(lm) {
+		const palm = Math.max(palmSize(lm), 0.001);
+		const tips = [8, 12, 16, 20];
+		let avg = 0;
+		for (let i = 0; i < tips.length; i++) {
+			const t = lm[tips[i]];
+			const w = lm[0];
+			avg += Math.hypot(t.x - w.x, t.y - w.y);
+		}
+		avg /= tips.length;
+		const open = avg / palm;
+		return Math.max(0, Math.min(1, (1.6 - open) / 0.9));
+	}
+
+	function mapHand(lm) {
+		const wrist = lm[0];
+		const palm = palmSize(lm);
+		const close = Math.max(0.12, Math.min(1, palm / 0.22));
+		return {
+			x: (wrist.x - 0.5) * 1.45,
+			y: (0.62 - wrist.y) * 1.15,
+			z: -(0.16 + (1 - close) * 0.9),
+			grip: gripOf(lm),
+			seen: true
+		};
+	}
+
+	async function startHands() {
+		if (running) return;
+		running = true;
+		window.kbState.error = "Asking for the camera…";
+		try {
+			if (typeof DeviceMotionEvent !== "undefined" && DeviceMotionEvent.requestPermission) {
+				try { await DeviceMotionEvent.requestPermission(); } catch (e) {}
+			}
+			if (typeof DeviceOrientationEvent !== "undefined" && DeviceOrientationEvent.requestPermission) {
+				try { await DeviceOrientationEvent.requestPermission(); } catch (e) {}
+			}
+			const stream = await navigator.mediaDevices.getUserMedia({
+				audio: false,
+				video: {
+					facingMode: { ideal: "environment" },
+					width: { ideal: 640 },
+					height: { ideal: 480 }
+				}
+			});
+			video.srcObject = stream;
+			video.classList.remove("kb-hide");
+			await video.play();
+			const mod = await import("https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.17/+esm");
+			const vision = await mod.FilesetResolver.forVisionTasks(
+				"https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.17/wasm"
+			);
+			const opts = {
+				baseOptions: {
+					modelAssetPath: "https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task",
+					delegate: "GPU"
+				},
+				runningMode: "VIDEO",
+				numHands: 2
+			};
+			try {
+				landmarker = await mod.HandLandmarker.createFromOptions(vision, opts);
+			} catch (e) {
+				opts.baseOptions.delegate = "CPU";
+				landmarker = await mod.HandLandmarker.createFromOptions(vision, opts);
+			}
+			window.kbState.camera = true;
+			window.kbState.error = "";
+			loop();
+		} catch (err) {
+			window.kbState.camera = false;
+			window.kbState.error = "Camera blocked — use touch or print the holder hole.";
+			console.error(err);
+		}
+		window.addEventListener("deviceorientation", onOrient, true);
+		try { await screen.orientation.lock("landscape"); } catch (e) {}
+		if (navigator.wakeLock && navigator.wakeLock.request) {
+			try { await navigator.wakeLock.request("screen"); } catch (e) {}
+		}
+	}
+
+	function onOrient(ev) {
+		if (ev.beta == null || ev.gamma == null) return;
+		let yaw = (ev.alpha || 0) * Math.PI / 180;
+		let pitch = ((ev.beta || 90) - 90) * Math.PI / 180;
+		if (!got0) {
+			yaw0 = yaw;
+			pitch0 = pitch;
+			got0 = true;
+		}
+		window.kbState.yaw = yaw - yaw0;
+		window.kbState.pitch = Math.max(-1.2, Math.min(1.2, pitch - pitch0));
+		window.kbState.from_orient = true;
+	}
+
+	function loop() {
+		if (!landmarker || video.readyState < 2) {
+			requestAnimationFrame(loop);
+			return;
+		}
+		if (video.currentTime !== lastVideoTime) {
+			lastVideoTime = video.currentTime;
+			const now = performance.now();
+			const res = landmarker.detectForVideo(video, now);
+			const L = restHand("left");
+			const R = restHand("right");
+			if (res && res.landmarks) {
+				for (let i = 0; i < res.landmarks.length; i++) {
+					const mapped = mapHand(res.landmarks[i]);
+					let name = "";
+					if (res.handedness && res.handedness[i] && res.handedness[i][0]) {
+						name = res.handedness[i][0].categoryName || "";
+					}
+					if (name === "Left") {
+						Object.assign(L, mapped);
+					} else if (name === "Right") {
+						Object.assign(R, mapped);
+					} else if (mapped.x < 0) {
+						Object.assign(L, mapped);
+					} else {
+						Object.assign(R, mapped);
+					}
+				}
+			}
+			window.kbState.left = L;
+			window.kbState.right = R;
+		}
+		requestAnimationFrame(loop);
+	}
+
+	window.kbStart = startHands;
+	window.kbRecenter = function () {
+		got0 = false;
+		window.kbState.yaw = 0;
+		window.kbState.pitch = -0.12;
+	};
+	window.kbHidePreview = function () {
+		video.classList.add("kb-hide");
+	};
+})();
+
+(function () {
+	const statusOverlay = document.getElementById("status");
+	const statusProgress = document.getElementById("status-progress");
+	const statusNotice = document.getElementById("status-notice");
+
+	let initializing = true;
+	let statusMode = "";
+
+	function setStatusMode(mode) {
+		if (statusMode === mode || !initializing) {
+			return;
+		}
+		if (mode === "hidden") {
+			statusOverlay.remove();
+			initializing = false;
+			return;
+		}
+		statusOverlay.style.visibility = "visible";
+		statusProgress.style.display = mode === "progress" ? "block" : "none";
+		statusNotice.style.display = mode === "notice" ? "block" : "none";
+		statusMode = mode;
+	}
+
+	function setStatusNotice(text) {
+		while (statusNotice.lastChild) {
+			statusNotice.removeChild(statusNotice.lastChild);
+		}
+		const lines = text.split("\n");
+		lines.forEach((line) => {
+			statusNotice.appendChild(document.createTextNode(line));
+			statusNotice.appendChild(document.createElement("br"));
+		});
+	}
+
+	function displayFailureNotice(err) {
+		console.error(err);
+		if (err instanceof Error) {
+			setStatusNotice(err.message);
+		} else if (typeof err === "string") {
+			setStatusNotice(err);
+		} else {
+			setStatusNotice("An unknown error occurred.");
+		}
+		setStatusMode("notice");
+		initializing = false;
+	}
+
+	const missing = Engine.getMissingFeatures({
+		threads: GODOT_THREADS_ENABLED,
+	});
+
+	if (missing.length !== 0) {
+		if (GODOT_CONFIG["serviceWorker"] && GODOT_CONFIG["ensureCrossOriginIsolationHeaders"] && "serviceWorker" in navigator) {
+			let serviceWorkerRegistrationPromise;
+			try {
+				serviceWorkerRegistrationPromise = navigator.serviceWorker.getRegistration();
+			} catch (err) {
+				serviceWorkerRegistrationPromise = Promise.reject(new Error("Service worker registration failed."));
+			}
+			Promise.race([
+				serviceWorkerRegistrationPromise.then((registration) => {
+					if (registration != null) {
+						return Promise.reject(new Error("Service worker already exists."));
+					}
+					return registration;
+				}).then(() => engine.installServiceWorker()),
+				new Promise((resolve) => {
+					setTimeout(() => resolve(), 2000);
+				}),
+			]).then(() => {
+				window.location.reload();
+			}).catch((err) => {
+				console.error("Error while registering service worker:", err);
+			});
+		} else {
+			const missingMsg = "Error\nThe following features required to run Godot projects on the Web are missing:\n";
+			displayFailureNotice(missingMsg + missing.join("\n"));
+		}
+	} else {
+		setStatusMode("progress");
+		engine.startGame({
+			"onProgress": function (current, total) {
+				if (current > 0 && total > 0) {
+					statusProgress.value = current;
+					statusProgress.max = total;
+				} else {
+					statusProgress.removeAttribute("value");
+					statusProgress.removeAttribute("max");
+				}
+			},
+		}).then(() => {
+			setStatusMode("hidden");
+		}, displayFailureNotice);
+	}
+})();
+</script>
+</body>
+</html>
+
