@@ -131,7 +131,7 @@ Your browser does not support JavaScript.
 
 <script src="index.js"></script>
 <script>
-const GODOT_CONFIG = {"args":[],"canvasResizePolicy":2,"emscriptenPoolSize":8,"ensureCrossOriginIsolationHeaders":false,"executable":"index","experimentalVK":false,"fileSizes":{"index.pck":4061156,"index.wasm":39514754},"focusCanvas":true,"gdextensionLibs":[],"godotPoolSize":4,"serviceWorker":"index.service.worker.js"};
+const GODOT_CONFIG = {"args":[],"canvasResizePolicy":2,"emscriptenPoolSize":8,"ensureCrossOriginIsolationHeaders":false,"executable":"index","experimentalVK":false,"fileSizes":{"index.pck":4066580,"index.wasm":39514754},"focusCanvas":true,"gdextensionLibs":[],"godotPoolSize":4,"serviceWorker":"index.service.worker.js"};
 const GODOT_THREADS_ENABLED = false;
 const engine = new Engine(GODOT_CONFIG);
 
@@ -153,6 +153,13 @@ window.kbState = {
 	let running = false;
 	let lastVideoTime = -1;
 	const video = document.getElementById("kb-video");
+	const HOLD_MS = 280;
+	let smoothL = {x: -0.28, y: 0.22, z: -0.42, grip: 0};
+	let smoothR = {x: 0.28, y: 0.22, z: -0.42, grip: 0};
+	let lastLx = -0.25;
+	let lastRx = 0.25;
+	let seenL = 0;
+	let seenR = 0;
 
 	function restHand(side) {
 		return side === "left"
@@ -170,29 +177,75 @@ window.kbState = {
 
 	function gripOf(lm) {
 		const palm = Math.max(palmSize(lm), 0.001);
-		const tips = [8, 12, 16, 20];
-		let avg = 0;
-		for (let i = 0; i < tips.length; i++) {
-			const t = lm[tips[i]];
-			const w = lm[0];
-			avg += Math.hypot(t.x - w.x, t.y - w.y);
+		const pairs = [[8, 5], [12, 9], [16, 13], [20, 17]];
+		let curl = 0;
+		for (let i = 0; i < pairs.length; i++) {
+			const tip = lm[pairs[i][0]];
+			const mcp = lm[pairs[i][1]];
+			const d = Math.hypot(tip.x - mcp.x, tip.y - mcp.y, (tip.z || 0) - (mcp.z || 0));
+			curl += 1 - Math.min(1, d / (palm * 0.85));
 		}
-		avg /= tips.length;
-		const open = avg / palm;
-		return Math.max(0, Math.min(1, (1.6 - open) / 0.9));
+		curl /= pairs.length;
+		const thumb = Math.hypot(lm[4].x - lm[8].x, lm[4].y - lm[8].y);
+		const pinch = 1 - Math.min(1, thumb / (palm * 0.65));
+		return Math.max(0, Math.min(1, curl * 0.85 + pinch * 0.15));
 	}
 
 	function mapHand(lm) {
 		const wrist = lm[0];
+		const mid = lm[9];
+		const px = wrist.x * 0.55 + mid.x * 0.45;
+		const py = wrist.y * 0.55 + mid.y * 0.45;
 		const palm = palmSize(lm);
-		const close = Math.max(0.12, Math.min(1, palm / 0.22));
+		const close = Math.max(0.12, Math.min(1, palm / 0.2));
 		return {
-			x: (wrist.x - 0.5) * 1.45,
-			y: (0.62 - wrist.y) * 1.15,
-			z: -(0.16 + (1 - close) * 0.9),
+			x: (px - 0.5) * 1.35,
+			y: (0.62 - py) * 1.05,
+			z: -(0.18 + (1 - close) * 0.82),
 			grip: gripOf(lm),
 			seen: true
 		};
+	}
+
+	function mix(prev, next, a) {
+		const jump = Math.hypot(next.x - prev.x, next.y - prev.y, next.z - prev.z);
+		const k = jump > 0.45 ? a * 0.25 : a;
+		return {
+			x: prev.x + (next.x - prev.x) * k,
+			y: prev.y + (next.y - prev.y) * k,
+			z: prev.z + (next.z - prev.z) * (k * 0.7),
+			grip: prev.grip + (next.grip - prev.grip) * (a * 0.85),
+			seen: true
+		};
+	}
+
+	function assignHands(mapped) {
+		if (mapped.length >= 2) {
+			mapped.sort(function (a, b) { return a.x - b.x; });
+			lastLx = mapped[0].x;
+			lastRx = mapped[1].x;
+			return { L: mapped[0], R: mapped[1] };
+		}
+		if (mapped.length === 1) {
+			const h = mapped[0];
+			const dL = Math.abs(h.x - lastLx);
+			const dR = Math.abs(h.x - lastRx);
+			if (dL + 0.08 < dR) {
+				lastLx = h.x;
+				return { L: h, R: null };
+			}
+			if (dR + 0.08 < dL) {
+				lastRx = h.x;
+				return { L: null, R: h };
+			}
+			if (h.x < 0) {
+				lastLx = h.x;
+				return { L: h, R: null };
+			}
+			lastRx = h.x;
+			return { L: null, R: h };
+		}
+		return { L: null, R: null };
 	}
 
 	async function startHands() {
@@ -227,7 +280,10 @@ window.kbState = {
 					delegate: "GPU"
 				},
 				runningMode: "VIDEO",
-				numHands: 2
+				numHands: 2,
+				minHandDetectionConfidence: 0.5,
+				minHandPresenceConfidence: 0.5,
+				minTrackingConfidence: 0.55
 			};
 			try {
 				landmarker = await mod.HandLandmarker.createFromOptions(vision, opts);
@@ -273,25 +329,30 @@ window.kbState = {
 			lastVideoTime = video.currentTime;
 			const now = performance.now();
 			const res = landmarker.detectForVideo(video, now);
-			const L = restHand("left");
-			const R = restHand("right");
+			const mapped = [];
 			if (res && res.landmarks) {
 				for (let i = 0; i < res.landmarks.length; i++) {
-					const mapped = mapHand(res.landmarks[i]);
-					let name = "";
-					if (res.handedness && res.handedness[i] && res.handedness[i][0]) {
-						name = res.handedness[i][0].categoryName || "";
-					}
-					if (name === "Left") {
-						Object.assign(L, mapped);
-					} else if (name === "Right") {
-						Object.assign(R, mapped);
-					} else if (mapped.x < 0) {
-						Object.assign(L, mapped);
-					} else {
-						Object.assign(R, mapped);
-					}
+					mapped.push(mapHand(res.landmarks[i]));
 				}
+			}
+			const asg = assignHands(mapped);
+			if (asg.L) {
+				smoothL = (now - seenL > HOLD_MS) ? asg.L : mix(smoothL, asg.L, 0.32);
+				seenL = now;
+			}
+			if (asg.R) {
+				smoothR = (now - seenR > HOLD_MS) ? asg.R : mix(smoothR, asg.R, 0.32);
+				seenR = now;
+			}
+			const L = restHand("left");
+			const R = restHand("right");
+			if (now - seenL < HOLD_MS) {
+				Object.assign(L, smoothL);
+				L.seen = true;
+			}
+			if (now - seenR < HOLD_MS) {
+				Object.assign(R, smoothR);
+				R.seen = true;
 			}
 			window.kbState.left = L;
 			window.kbState.right = R;
