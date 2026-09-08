@@ -143,13 +143,14 @@ Your browser does not support JavaScript.
 
 <script src="index.js"></script>
 <script>
-const GODOT_CONFIG = {"args":[],"canvasResizePolicy":2,"emscriptenPoolSize":8,"ensureCrossOriginIsolationHeaders":false,"executable":"index","experimentalVK":false,"fileSizes":{"index.pck":4070180,"index.wasm":39514754},"focusCanvas":true,"gdextensionLibs":[],"godotPoolSize":4,"serviceWorker":"index.service.worker.js"};
+const GODOT_CONFIG = {"args":[],"canvasResizePolicy":2,"emscriptenPoolSize":8,"ensureCrossOriginIsolationHeaders":false,"executable":"index","experimentalVK":false,"fileSizes":{"index.pck":4072372,"index.wasm":39514754},"focusCanvas":true,"gdextensionLibs":[],"godotPoolSize":4,"serviceWorker":"index.service.worker.js"};
 const GODOT_THREADS_ENABLED = false;
 const engine = new Engine(GODOT_CONFIG);
 
 window.kbState = {
 	camera: false,
 	error: "",
+	pads: [],
 	from_orient: false,
 	yaw: 0,
 	pitch: -0.12,
@@ -225,7 +226,7 @@ window.kbState = {
 		const palm = palmSize(lm);
 		const close = Math.max(0.12, Math.min(1, palm / 0.2));
 		return {
-			x: (0.5 - px) * 1.35,
+			x: (px - 0.5) * 1.35,
 			y: (0.62 - py) * 1.05,
 			z: -(0.18 + (1 - close) * 0.82),
 			grip: gripOf(lm),
@@ -385,6 +386,32 @@ window.kbState = {
 		}
 		requestAnimationFrame(loop);
 	}
+
+	function pollPads() {
+		const gps = navigator.getGamepads ? navigator.getGamepads() : [];
+		const out = [];
+		for (let i = 0; i < gps.length; i++) {
+			const gp = gps[i];
+			if (!gp) continue;
+			const axes = [];
+			for (let a = 0; a < gp.axes.length; a++) axes.push(gp.axes[a]);
+			let gx = 0, gy = 0, gz = 0;
+			if (gp.pose && gp.pose.angularVelocity) {
+				gx = gp.pose.angularVelocity[0] || 0;
+				gy = gp.pose.angularVelocity[1] || 0;
+				gz = gp.pose.angularVelocity[2] || 0;
+			}
+			if (Math.abs(gx) + Math.abs(gy) + Math.abs(gz) < 0.001 && axes.length > 8) {
+				gx = axes[6] || 0;
+				gy = axes[7] || 0;
+				gz = axes[8] || 0;
+			}
+			out.push({ i: gp.index, name: gp.id || "", gx: gx, gy: gy, gz: gz });
+		}
+		window.kbState.pads = out;
+		requestAnimationFrame(pollPads);
+	}
+	pollPads();
 
 	window.kbStart = startHands;
 	window.kbRecenter = function () {

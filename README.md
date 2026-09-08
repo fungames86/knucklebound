@@ -1,7 +1,5 @@
 # Knucklebound
 
-Make fists or squeeze Joy-Con ZL + ZR to run on the ground. Let go to stop.
+Swing your arms like Gorilla Tag. Push the ground to run. Push down to jump.
 
 **Play:** https://fungames86.github.io/knucklebound/
-
-Pair Joy-Cons: iPhone Settings → Bluetooth. Sync button on each Joy-Con rail, then tap Joy-Con (L) and Joy-Con (R).
