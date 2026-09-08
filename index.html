@@ -143,7 +143,7 @@ Your browser does not support JavaScript.
 
 <script src="index.js"></script>
 <script>
-const GODOT_CONFIG = {"args":[],"canvasResizePolicy":2,"emscriptenPoolSize":8,"ensureCrossOriginIsolationHeaders":false,"executable":"index","experimentalVK":false,"fileSizes":{"index.pck":4073316,"index.wasm":39514754},"focusCanvas":true,"gdextensionLibs":[],"godotPoolSize":4,"serviceWorker":"index.service.worker.js"};
+const GODOT_CONFIG = {"args":[],"canvasResizePolicy":2,"emscriptenPoolSize":8,"ensureCrossOriginIsolationHeaders":false,"executable":"index","experimentalVK":false,"fileSizes":{"index.pck":4075780,"index.wasm":39514754},"focusCanvas":true,"gdextensionLibs":[],"godotPoolSize":4,"serviceWorker":"index.service.worker.js"};
 const GODOT_THREADS_ENABLED = false;
 const engine = new Engine(GODOT_CONFIG);
 
@@ -394,24 +394,23 @@ window.kbState = {
 			const gp = gps[i];
 			if (!gp) continue;
 			const axes = [];
-			for (let a = 0; a < gp.axes.length; a++) axes.push(gp.axes[a]);
-			let gx = 0, gy = 0, gz = 0;
-			if (gp.pose && gp.pose.angularVelocity) {
-				gx = gp.pose.angularVelocity[0] || 0;
-				gy = gp.pose.angularVelocity[1] || 0;
-				gz = gp.pose.angularVelocity[2] || 0;
+			for (let a = 0; a < gp.axes.length; a++) axes.push(Number(gp.axes[a]) || 0);
+			const buttons = [];
+			for (let b = 0; b < gp.buttons.length; b++) {
+				const btn = gp.buttons[b];
+				buttons.push(btn ? Number(btn.value || (btn.pressed ? 1 : 0)) : 0);
 			}
-			if (Math.abs(gx) + Math.abs(gy) + Math.abs(gz) < 0.001 && axes.length > 8) {
-				gx = axes[6] || 0;
-				gy = axes[7] || 0;
-				gz = axes[8] || 0;
-			}
-			out.push({ i: gp.index, name: gp.id || "", gx: gx, gy: gy, gz: gz });
+			out.push({ i: gp.index, name: gp.id || "", axes: axes, buttons: buttons });
 		}
 		window.kbState.pads = out;
 		requestAnimationFrame(pollPads);
 	}
 	pollPads();
+	window.addEventListener("gamepadconnected", pollPads, true);
+	window.addEventListener("gamepaddisconnected", pollPads, true);
+	["pointerdown", "touchstart", "keydown"].forEach(function (e) {
+		window.addEventListener(e, pollPads, true);
+	});
 
 	window.kbStart = startHands;
 	window.kbRecenter = function () {
