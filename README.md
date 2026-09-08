@@ -1,11 +1,7 @@
 # Knucklebound
 
-Phone VR ape parkour. Make fists to go the way you look. Open your hands to stop.
+Make fists or squeeze Joy-Con ZL + ZR to run on the ground. Let go to stop.
 
 **Play:** https://fungames86.github.io/knucklebound/
 
-This is **not** Gorilla Tag. Names, maps, and looks are original.
-
-On iPhone: open the link in **Safari**, allow the camera, then drop the phone in a headset (print `print/knucklebound_viewer.stl` or use any cheap phone VR viewer with a camera hole). Make fists to move. Open your hands to stop. Safari → Share → Add to Home Screen if you want an icon.
-
-Print notes: [print/README.md](print/README.md)
+Pair Joy-Cons: iPhone Settings → Bluetooth. Sync button on each Joy-Con rail, then tap Joy-Con (L) and Joy-Con (R).
