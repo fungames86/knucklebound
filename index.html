@@ -143,7 +143,7 @@ Your browser does not support JavaScript.
 
 <script src="index.js"></script>
 <script>
-const GODOT_CONFIG = {"args":[],"canvasResizePolicy":2,"emscriptenPoolSize":8,"ensureCrossOriginIsolationHeaders":false,"executable":"index","experimentalVK":false,"fileSizes":{"index.pck":10407996,"index.wasm":39514754},"focusCanvas":true,"gdextensionLibs":[],"godotPoolSize":4,"serviceWorker":"index.service.worker.js"};
+const GODOT_CONFIG = {"args":[],"canvasResizePolicy":2,"emscriptenPoolSize":8,"ensureCrossOriginIsolationHeaders":false,"executable":"index","experimentalVK":false,"fileSizes":{"index.pck":11112012,"index.wasm":39514754},"focusCanvas":true,"gdextensionLibs":[],"godotPoolSize":4,"serviceWorker":"index.service.worker.js"};
 const GODOT_THREADS_ENABLED = false;
 const engine = new Engine(GODOT_CONFIG);
 
@@ -163,6 +163,8 @@ window.kbState = {
 	let yaw0 = 0;
 	let pitch0 = 0;
 	let got0 = false;
+	let smYaw = 0;
+	let smPitch = -0.12;
 	let landmarker = null;
 	let running = false;
 	let lastVideoTime = -1;
@@ -376,13 +378,22 @@ window.kbState = {
 		if (!got0) {
 			yaw0 = yaw;
 			pitch0 = pitch;
+			smYaw = 0;
+			smPitch = -0.12;
 			got0 = true;
 		}
 		let dyaw = yaw - yaw0;
 		while (dyaw > Math.PI) dyaw -= Math.PI * 2;
 		while (dyaw < -Math.PI) dyaw += Math.PI * 2;
-		window.kbState.yaw = dyaw;
-		window.kbState.pitch = Math.max(-1.25, Math.min(1.25, pitch - pitch0));
+		let step = dyaw - smYaw;
+		while (step > Math.PI) step -= Math.PI * 2;
+		while (step < -Math.PI) step += Math.PI * 2;
+		if (Math.abs(step) > 0.85) step = 0;
+		smYaw += step * 0.28;
+		const wantPitch = Math.max(-1.25, Math.min(1.25, pitch - pitch0));
+		smPitch += (wantPitch - smPitch) * 0.28;
+		window.kbState.yaw = smYaw;
+		window.kbState.pitch = smPitch;
 		window.kbState.from_orient = true;
 	}
 
@@ -463,6 +474,8 @@ window.kbState = {
 	};
 	window.kbRecenter = function () {
 		got0 = false;
+		smYaw = 0;
+		smPitch = -0.12;
 		window.kbState.yaw = 0;
 		window.kbState.pitch = -0.12;
 	};

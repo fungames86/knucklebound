@@ -75,8 +75,19 @@ Tall cliff walls close off each grove so you cannot fall off the edge of the map
 
 ## Maps
 
-- **Mossgrove Hollow** — climbable trunks, canopy decks, a cave, flowers, and tall cliff walls around the rim.
-- **Sunledge Quarry** — stone terraces, a pit, and canyon walls. Switch maps on the title screen.
+Start in **Mossgrove Hollow**. Walk **east** into the cave and step through a glowing ring:
+
+- **Frostveil** — ice and snow.
+- **Brickmarket** — rooftops and alleys.
+- **Sparrow Spire** — thin planks and parkour.
+- **Emberkiln** — dark rock and warm ledges.
+- **Sunledge Quarry** — stone terraces and a pit.
+
+Each land has a return ring back to Mossgrove.
+
+## Outfitter
+
+West of spawn is a wooden stall. Walk in. Slap a colored ball to change fur, slap a hat / shirt / stick to wear it. There is no shop button.
 
 ## Print the headset
 
