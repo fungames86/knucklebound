@@ -4,7 +4,7 @@
 // Incrementing CACHE_VERSION will kick off the install event and force
 // previously cached resources to be updated from the network.
 /** @type {string} */
-const CACHE_VERSION = '1788905159|5050113';
+const CACHE_VERSION = '1789745546|1040380';
 /** @type {string} */
 const CACHE_PREFIX = 'Knucklebound-sw-cache-';
 const CACHE_NAME = CACHE_PREFIX + CACHE_VERSION;
