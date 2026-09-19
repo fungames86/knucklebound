@@ -6,7 +6,8 @@ Knucklebound is an original GameStudio game. It is not Gorilla Tag and does not 
 |---|---|---|
 | Kenney Nature Kit (trees, rocks, cliffs, bridges, flowers, grass) | Kenney | CC0 |
 | Kenney impact + interface sounds | Kenney | CC0 |
-| Poly Haven forest floor, rock face, pine bark, sand, mossy rock (1k diffs) | Poly Haven contributors | CC0 |
+| Poly Haven forest floor, rock face, pine bark, sand, mossy rock, leafy grass (1k diffs) | Poly Haven contributors | CC0 |
+| Canopy and plank tile textures | Generated for this project | original |
 | Nunito font | Vernon Adams / Cyreal / Jacques Le Bailly | OFL |
 | Ape icon, key art, fur texture | Generated for this project | original |
 
