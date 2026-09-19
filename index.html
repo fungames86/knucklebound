@@ -13,7 +13,7 @@
 <title>Knucklebound</title>
 <script>
 (function () {
-	var VER = "kb11";
+	var VER = "kb13";
 	try {
 		if ("serviceWorker" in navigator) {
 			navigator.serviceWorker.getRegistrations().then(function (regs) {
@@ -119,6 +119,16 @@ text-align: center;
 z-index: 1;
 }
 
+#kb-video {
+position: fixed;
+right: 0;
+bottom: 0;
+width: 8px;
+height: 8px;
+opacity: 0.04;
+z-index: 1;
+pointer-events: none;
+}
 </style>
 <link id="-gd-engine-icon" rel="icon" type="image/png" href="index.icon.png" />
 <link rel="apple-touch-icon" href="index.apple-touch-icon.png"/>
@@ -138,11 +148,11 @@ Your browser does not support JavaScript.
 <progress id="status-progress"></progress>
 <div id="status-notice"></div>
 </div>
-
+<video id="kb-video" playsinline autoplay muted></video>
 
 <script src="index.js"></script>
 <script>
-const GODOT_CONFIG = {"args":[],"canvasResizePolicy":2,"emscriptenPoolSize":8,"ensureCrossOriginIsolationHeaders":false,"executable":"index","experimentalVK":false,"fileSizes":{"index.pck":15097644,"index.wasm":39514754},"focusCanvas":true,"gdextensionLibs":[],"godotPoolSize":4};
+const GODOT_CONFIG = {"args":[],"canvasResizePolicy":2,"emscriptenPoolSize":8,"ensureCrossOriginIsolationHeaders":false,"executable":"index","experimentalVK":false,"fileSizes":{"index.pck":15098012,"index.wasm":39514754},"focusCanvas":true,"gdextensionLibs":[],"godotPoolSize":4};
 const GODOT_THREADS_ENABLED = false;
 const engine = new Engine(GODOT_CONFIG);
 
