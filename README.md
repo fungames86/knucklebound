@@ -13,7 +13,7 @@ You do **not** walk with WASD.
 1. Look around by turning your head (phone VR) or moving the mouse (computer). The grove turns with you.
 2. Swing a hand down into the ground. You go the **opposite** way the hand pushed — slap back to go forward, slap left to go right.
 3. Slap **down** hard to jump.
-4. Camera watches your real arms through the holder hole. Joy-Con sticks also swing that hand (stick down slaps the ground).
+4. Joy-Con sticks swing that hand. Stick down slaps the ground.
 
 ## Voice chat
 
@@ -30,7 +30,7 @@ iPhone **iOS 16+** can pair Switch Joy-Cons. Pair **both**.
 5. Open Knucklebound in **Safari**. Keep the Switch **asleep** so it does not steal them.
 6. Stick down slaps the ground the way you are looking. Push down to jump. **+** pauses.
 
-The phone cannot feel Joy-Con tilt in the air. For real-life arm movement, hold your hands in front of the camera hole.
+The phone cannot feel where the Joy-Cons are in the air. Use the sticks to swing each arm.
 
 ## Play on iPhone
 
@@ -38,14 +38,14 @@ Apple will not let us text you a real App Store app as a file. Play it in **Safa
 
 1. Print the headset in `print/` (or use any cheap phone VR viewer).
 2. Open the game on the phone (Safari).
-3. Allow **camera** (and **mic** if you want voice chat).
+3. Allow **mic** if you want voice chat.
 4. Drop the phone in the holder, landscape, USB-C on the **right**.
 5. Look around — the world looks that way. Slap the ground to move.
 6. Safari → Share → Add to Home Screen if you want an icon.
 
 The screen is split into **two eyes**. Cheap cardboard lenses bend each half so it looks 3D.
 
-Camera and mic need **https**. GitHub Pages is fine. A plain `http://` LAN link will refuse them.
+Voice chat needs **https**. GitHub Pages is fine.
 
 Tall cliff walls close off each grove so you cannot fall off the edge of the map.
 
