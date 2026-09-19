@@ -13,7 +13,7 @@ You do **not** walk with WASD.
 1. Look around by turning your head (phone VR) or moving the mouse (computer). The grove turns with you.
 2. Swing a hand down into the ground. You go the **opposite** way the hand pushed — slap back to go forward, slap left to go right.
 3. Slap **down** hard to jump.
-4. Joy-Con sticks swing that hand. Stick down slaps the ground.
+4. Joy-Con sticks swing that arm **around your body**. Let go and the arm hangs at your side. Stick toward the other hand = in front. Stick out = behind you. Stick down slaps the ground.
 
 ## Voice chat
 
@@ -28,9 +28,9 @@ iPhone **iOS 16+** can pair Switch Joy-Cons. Pair **both**.
 3. iPhone: **Settings → Bluetooth**. Tap **Joy-Con (L)**.
 4. Do the same for **Joy-Con (R)**.
 5. Open Knucklebound in **Safari**. Keep the Switch **asleep** so it does not steal them.
-6. Stick down slaps the ground the way you are looking. Push down to jump. **+** pauses.
+6. Stick down slaps the ground. Stick out swings that arm behind you. **+** pauses.
 
-The phone cannot feel where the Joy-Cons are in the air. Use the sticks to swing each arm.
+The phone cannot feel where the Joy-Cons are in the air. The sticks place each arm around you — front, sides, and back.
 
 ## Play on iPhone
 
@@ -91,7 +91,7 @@ West of spawn is a wooden stall. Walk in. Slap a colored ball to change fur, sla
 
 ## Print the headset
 
-See `print/README.md`. You need two 25 mm VR lenses (~45 mm focal length) and a strip of elastic. The holder leaves the phone **back open** so the camera can see your hands.
+See `print/README.md`. You need two 25 mm VR lenses (~45 mm focal length) and a strip of elastic.
 
 ## Why two screens
 
